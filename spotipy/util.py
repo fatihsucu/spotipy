@@ -4,6 +4,7 @@
 from __future__ import print_function
 import os
 import subprocess
+
 from . import oauth2
 import spotipy
 
@@ -52,7 +53,6 @@ def prompt_for_user_token(username, scope=None, client_id = None,
     # try to get a valid token for this user, from the cache,
     # if not in the cache, the create a new (this will send
     # the user to a web page where they can authorize this app)
-
     token_info = sp_oauth.get_cached_token()
 
     if not token_info:
@@ -67,7 +67,7 @@ def prompt_for_user_token(username, scope=None, client_id = None,
         ''')
         auth_url = sp_oauth.get_authorize_url()
         try:
-            subprocess.call(["open", auth_url])
+            subprocess.call(["xdg-open", auth_url])
             print("Opening %s in your browser" % auth_url)
         except:
             print("Please navigate here: %s" % auth_url)

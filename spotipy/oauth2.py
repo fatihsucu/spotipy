@@ -203,7 +203,6 @@ class SpotifyOAuth(object):
         else: # Python 2
             auth_header = base64.b64encode(self.client_id + ':' + self.client_secret)
             headers = {'Authorization': 'Basic %s' % auth_header}
-
         response = requests.post(self.OAUTH_TOKEN_URL, data=payload,
             headers=headers, verify=True)
         if response.status_code is not 200:
