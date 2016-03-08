@@ -197,25 +197,37 @@ class Spotify(object):
     def _warn(self, msg):
         print('warning:' + msg, file=sys.stderr)
 
-    def track(self, track_id):
-        ''' returns a single track given the track's ID, URI or URL
+    def album(self, album_id):
+        ''' returns a single album given the album's ID, URIs or URL
 
             Parameters:
-                - track_id - a spotify URI, URL or ID
+                - album_id - the album ID, URI or URL
         '''
 
-        trid = self._get_id('track', track_id)
-        return self._get('tracks/' + trid)
+        trid = self._get_id('album', album_id)
+        return self._get('albums/' + trid)
 
-    def tracks(self, tracks):
-        ''' returns a list of tracks given a list of track IDs, URIs, or URLs
+    def albums(self, albums):
+        ''' returns a list of albums given the album IDs, URIs, or URLs
 
             Parameters:
-                - tracks - a list of spotify URIs, URLs or IDs
+                - albums - a list of  album IDs, URIs or URLs
         '''
 
-        tlist = [self._get_id('track', t) for t in tracks]
-        return self._get('tracks/?ids=' + ','.join(tlist))
+        tlist = [self._get_id('album', a) for a in albums]
+        return self._get('albums/?ids=' + ','.join(tlist))
+
+    def album_tracks(self, album_id, limit=50, offset=0):
+        ''' Get Spotify catalog information about an album's tracks
+
+            Parameters:
+                - album_id - the album ID, URI or URL
+                - limit  - the number of items to return
+                - offset - the index of the first item to return
+        '''
+
+        trid = self._get_id('album', album_id)
+        return self._get('albums/' + trid + '/tracks', limit=limit, offset=offset)
 
     def artist(self, artist_id):
         ''' returns a single artist given the artist's ID, URI or URL
@@ -226,7 +238,6 @@ class Spotify(object):
 
         trid = self._get_id('artist', artist_id)
         return self._get('artists/' + trid)
-
 
     def artists(self, artists):
         ''' returns a list of artists given the artist IDs, URIs, or URLs
@@ -276,302 +287,6 @@ class Spotify(object):
         '''
         trid = self._get_id('artist', artist_id)
         return self._get('artists/' + trid + '/related-artists')
-
-    def album(self, album_id):
-        ''' returns a single album given the album's ID, URIs or URL
-
-            Parameters:
-                - album_id - the album ID, URI or URL
-        '''
-
-        trid = self._get_id('album', album_id)
-        return self._get('albums/' + trid)
-
-    def album_tracks(self, album_id, limit=50, offset=0):
-        ''' Get Spotify catalog information about an album's tracks
-
-            Parameters:
-                - album_id - the album ID, URI or URL
-                - limit  - the number of items to return
-                - offset - the index of the first item to return
-        '''
-
-        trid = self._get_id('album', album_id)
-        return self._get('albums/' + trid + '/tracks/', limit=limit, offset=offset)
-
-    def albums(self, albums):
-        ''' returns a list of albums given the album IDs, URIs, or URLs
-
-            Parameters:
-                - albums - a list of  album IDs, URIs or URLs
-        '''
-
-        tlist = [self._get_id('album', a) for a in albums]
-        return self._get('albums/?ids=' + ','.join(tlist))
-
-    def search(self, q, limit=10, offset=0, type='track'):
-        ''' searches for an item
-
-            Parameters:
-                - q - the search query
-                - limit  - the number of items to return
-                - offset - the index of the first item to return
-                - type - the type of item to return. One of 'artist', 'album',
-                         'track' or 'playlist'
-        '''
-        return self._get('search', q=q, limit=limit, offset=offset, type=type)
-
-    def user(self, user):
-        ''' Gets basic profile information about a Spotify User
-
-            Parameters:
-                - user - the id of the usr
-        '''
-        return self._get('users/' + user)
-
-    def user_playlists(self, user, limit=50, offset=0):
-        ''' Gets playlists of a user
-
-            Parameters:
-                - user - the id of the usr
-                - limit  - the number of items to return
-                - offset - the index of the first item to return
-        '''
-        return self._get("users/%s/playlists" % user, limit=limit, offset=offset)
-
-    def user_playlist(self, user, playlist_id = None, fields=None):
-        ''' Gets playlist of a user
-            Parameters:
-                - user - the id of the user
-                - playlist_id - the id of the playlist
-                - fields - which fields to return
-        '''
-        if playlist_id == None:
-            return self._get("users/%s/starred" % (user), fields=fields)
-        plid = self._get_id('playlist', playlist_id)
-        return self._get("users/%s/playlists/%s" % (user, plid), fields=fields)
-
-    def user_playlist_tracks(self, user, playlist_id = None, fields=None,
-        limit=100, offset=0):
-        ''' Get full details of the tracks of a playlist owned by a user.
-
-            Parameters:
-                - user - the id of the user
-                - playlist_id - the id of the playlist
-                - fields - which fields to return
-                - limit - the maximum number of tracks to return
-                - offset - the index of the first track to return
-        '''
-        plid = self._get_id('playlist', playlist_id)
-        return self._get("users/%s/playlists/%s/tracks" % (user, plid),
-                    limit=limit, offset=offset, fields=fields)
-
-    def user_playlist_create(self, user, name, public=True):
-        ''' Creates a playlist for a user
-
-            Parameters:
-                - user - the id of the user
-                - name - the name of the playlist
-                - public - is the created playlist public
-        '''
-        data = {'name':name, 'public':public }
-        return self._post("users/%s/playlists" % (user,), payload = data)
-
-    def user_playlist_add_tracks(self, user, playlist_id, tracks,
-                position=None):
-        ''' Adds tracks to a playlist
-
-            Parameters:
-                - user - the id of the user
-                - playlist_id - the id of the playlist
-                - tracks - a list of track URIs, URLs or IDs
-                - position - the position to add the tracks
-        '''
-        plid = self._get_id('playlist', playlist_id)
-        ftracks = [ self._get_uri('track', tid) for tid in tracks]
-        return self._post("users/%s/playlists/%s/tracks" % (user,plid),
-             payload = ftracks, position=position)
-
-    def user_playlist_replace_tracks(self, user, playlist_id, tracks):
-        ''' Replace all tracks in a playlist
-
-            Parameters:
-                - user - the id of the user
-                - playlist_id - the id of the playlist
-                - tracks - the list of track ids to add to the playlist
-        '''
-        plid = self._get_id('playlist', playlist_id)
-        ftracks = [ self._get_uri('track', tid) for tid in tracks]
-        payload = { "uris": ftracks }
-        return self._put("users/%s/playlists/%s/tracks" % (user,plid),
-                payload = payload)
-
-    def user_playlist_reorder_tracks(self, user, playlist_id, range_start, insert_before,
-                        range_length=1, snapshot_id=None):
-        ''' Reorder tracks in a playlist
-
-            Parameters:
-                - user - the id of the user
-                - playlist_id - the id of the playlist
-                - range_start - the position of the first track to be reordered
-                - range_length - optional the number of tracks to be reordered (default: 1)
-                - insert_before - the position where the tracks should be inserted
-                - snapshot_id - optional playlist's snapshot ID
-        '''
-        plid = self._get_id('playlist', playlist_id)
-        payload = { "range_start": range_start,
-                    "range_length": range_length,
-                    "insert_before": insert_before }
-        if snapshot_id:
-            payload["snapshot_id"] = snapshot_id
-        return self._put("users/%s/playlists/%s/tracks" % (user,plid),
-                payload = payload)
-
-    def user_playlist_remove_all_occurrences_of_tracks(self, user, playlist_id,
-                        tracks, snapshot_id=None):
-        ''' Removes all occurrences of the given tracks from the given playlist
-
-            Parameters:
-                - user - the id of the user
-                - playlist_id - the id of the playlist
-                - tracks - the list of track ids to add to the playlist
-                - snapshot_id - optional id of the playlist snapshot
-
-        '''
-
-        plid = self._get_id('playlist', playlist_id)
-        ftracks = [ self._get_uri('track', tid) for tid in tracks]
-        payload = { "tracks": [ {"uri": track} for track in ftracks] }
-        if snapshot_id:
-            payload["snapshot_id"] = snapshot_id
-        return self._delete("users/%s/playlists/%s/tracks" % (user, plid),
-                payload = payload)
-
-    def user_playlist_remove_specific_occurrences_of_tracks(self, user,
-            playlist_id, tracks, snapshot_id=None):
-        ''' Removes all occurrences of the given tracks from the given playlist
-
-            Parameters:
-                - user - the id of the user
-                - playlist_id - the id of the playlist
-                - tracks - an array of objects containing Spotify URIs of the tracks to remove with their current positions in the playlist.  For example:
-                    [  { "uri":"4iV5W9uYEdYUVa79Axb7Rh", "positions":[2] },
-                       { "uri":"1301WleyT98MSxVHPZCA6M", "positions":[7] } ]
-                - snapshot_id - optional id of the playlist snapshot
-        '''
-
-        plid = self._get_id('playlist', playlist_id)
-        ftracks = []
-        for tr in tracks:
-            ftracks.append({
-                "uri": self._get_uri("track", tr["uri"]),
-                "positions": tr["positions"],
-            })
-        payload = { "tracks": ftracks }
-        if snapshot_id:
-            payload["snapshot_id"] = snapshot_id
-        return self._delete("users/%s/playlists/%s/tracks" % (user, plid),
-                payload = payload)
-
-    def me(self):
-        ''' Get detailed profile information about the current user.
-            An alias for the 'current_user' method.
-        '''
-        return self._get('me/')
-
-    def current_user(self):
-        ''' Get detailed profile information about the current user.
-            An alias for the 'me' method.
-        '''
-        return self.me()
-
-    def current_user_saved_albums(self, limit=20, offset=0):
-        ''' Gets a list of the albums saved in the current authorized user's
-            "Your Music" library
-
-            Parameters:
-                - limit - the number of albums to return
-                - offset - the index of the first album to return
-
-        '''
-        return self._get('me/albums', limit=limit, offset=offset)
-
-    def current_user_saved_tracks(self, limit=20, offset=0):
-        ''' Gets a list of the tracks saved in the current authorized user's
-            "Your Music" library
-
-            Parameters:
-                - limit - the number of tracks to return
-                - offset - the index of the first track to return
-
-        '''
-        return self._get('me/tracks', limit=limit, offset=offset)
-    
-    def current_user_followed_artists(self, limit=20, after=None):
-        ''' Gets a list of the artists followed by the current authorized user
-
-            Parameters:
-                - limit - the number of tracks to return
-                - after - ghe last artist ID retrieved from the previous request
-
-        '''
-        return self._get('me/following', type='artist', limit=limit, after=after)
-
-    def current_user_saved_tracks_delete(self, tracks=[]):
-        ''' Remove one or more tracks from the current user's
-            "Your Music" library.
-
-            Parameters:
-                - tracks - a list of track URIs, URLs or IDs
-        '''
-        tlist = [self._get_id('track', t) for t in tracks]
-        return self._delete('me/tracks/?ids=' + ','.join(tlist))
-
-    def current_user_saved_tracks_contains(self, tracks=[]):
-        ''' Check if one or more tracks is already saved in
-            the current Spotify user’s “Your Music” library.
-
-            Parameters:
-                - tracks - a list of track URIs, URLs or IDs
-        '''
-        tlist = [self._get_id('track', t) for t in tracks]
-        return self._get('me/tracks/contains?ids=' + ','.join(tlist))
-
-
-    def current_user_saved_tracks_add(self, tracks=[]):
-        ''' Add one or more tracks to the current user's
-            "Your Music" library.
-
-            Parameters:
-                - tracks - a list of track URIs, URLs or IDs
-        '''
-        tlist = [self._get_id('track', t) for t in tracks]
-        return self._put('me/tracks/?ids=' + ','.join(tlist))
-
-    def current_user_top_artists(self, limit=20, offset=0, time_range='6-months'):
-        ''' Get the current user's top artists
-
-            Parameters:
-                - limit - the number of entities to return
-                - offset - the index of the first entity to return
-                - time_range - Over what time frame are the affinities computed.
-                  Valid-values: all-time, 6-months, 14-days. Default: 6-months
-        '''
-        return self._get('me/toplists/artists', args={'time-range':time_range}, 
-            limit=limit,offset=offset)
-
-    def current_user_top_tracks(self, limit=20, offset=0, time_range='6-months'):
-        ''' Get the current user's top tracks
-
-            Parameters:
-                - limit - the number of entities to return
-                - offset - the index of the first entity to return
-                - time_range - Over what time frame are the affinities computed.
-                  Valid-values: all-time, 6-months, 14-days. Default: 6-months
-        '''
-        return self._get('me/toplists/tracks', args={'time-range':time_range}, 
-            limit=limit,offset=offset)
-
 
     def featured_playlists(self, locale=None, country=None,
             timestamp=None, limit=20, offset = 0):
@@ -634,6 +349,24 @@ class Spotify(object):
         return self._get('browse/categories', country=country, locale=locale,
             limit=limit, offset=offset)
 
+    def get_category(self, category_id, country="US", locale=None):
+        """
+        Args:
+           - category_id: The Spotify category ID for the category.
+           - country: Optional. A country: an ISO 3166-1 alpha-2 country
+           code.Provide this parameter to ensure that the category exists
+           for a particular country.
+           - locale: Optional. The desired language, consisting of an ISO 639
+           language code and an ISO 3166-1 alpha-2 country code,
+           joined by an underscore
+
+        Returns:
+
+        """
+        ct_id = self._get_id("categories", category_id)
+        return self._get('browse/categories/{}'.format(ct_id),
+                         country=country, locale=locale)
+
     def category_playlists(self,  category_id=None, country=None, limit=20, offset = 0):
         ''' Get a list of new album releases featured in Spotify
 
@@ -649,22 +382,305 @@ class Spotify(object):
                   (the first object). Use with limit to get the next set of
                   items.
         '''
-        return self._get('browse/categories/' + category_id + '/playlists', country=country, 
-            limit=limit, offset=offset)
+        return self._get('browse/categories/' + category_id + '/playlists',
+                         country=country, limit=limit, offset=offset)
 
-    def audio_features(self, tracks=[]):
-        ''' Get audio features for multiple tracks based upon their Spotify IDs
+    def me(self):
+        ''' Get detailed profile information about the current user.
+            An alias for the 'current_user' method.
+        '''
+        return self._get('me/')
+
+    def current_user_followed_artists(self, limit=20, after=None):
+        ''' Gets a list of the artists followed by the current authorized user
+
             Parameters:
-                - tracks - a list of track URIs, URLs or IDs, maximum: 50 ids
+                - limit - the number of tracks to return
+                - after - ghe last artist ID retrieved from the previous request
+
+        '''
+        return self._get('me/following', type='artist', limit=limit, after=after)
+
+    def current_user_follow_artists(self):
+        #TODO:  https://developer.spotify.com/web-api/follow-artists-users/
+        raise NotImplementedError("Not implemented yet")
+
+    def current_user_unfollow_artisis(self):
+        #TODO: https://developer.spotify.com/web-api/unfollow-artists-users/
+        raise NotImplementedError("Not Implemented yet")
+
+    def current_user_followed_contains(self):
+        #TODO: https://developer.spotify.com/web-api/check-current-user-follows/
+        raise NotImplementedError("Not Implemented yet")
+
+    def current_user_follow_playlist(self):
+        #TODO https://developer.spotify.com/web-api/follow-playlist/
+        raise NotImplementedError("Not Implemented yet")
+
+    def current_user_unfollow_playlist(self):
+        #TODO: https://developer.spotify.com/web-api/unfollow-playlist/
+        raise NotImplementedError("Not Implemented yet")
+
+    def current_user_saved_tracks(self, limit=20, offset=0):
+        ''' Gets a list of the tracks saved in the current authorized user's
+            "Your Music" library
+
+            Parameters:
+                - limit - the number of tracks to return
+                - offset - the index of the first track to return
+
+        '''
+        return self._get('me/tracks', limit=limit, offset=offset)
+
+    def current_user_saved_tracks_add(self, tracks=[]):
+        ''' Add one or more tracks to the current user's
+            "Your Music" library.
+
+            Parameters:
+                - tracks - a list of track URIs, URLs or IDs
         '''
         tlist = [self._get_id('track', t) for t in tracks]
-        results =  self._get('audio-features?ids=' + ','.join(tlist))
-        # the response has changed, look for the new style first, and if
-        # its not there, fallback on the old style
-        if 'audio_features' in results:
-            return results['audio_features']
-        else:
-            return results
+        return self._put('me/tracks/?ids=' + ','.join(tlist))
+
+    def current_user_saved_tracks_delete(self, tracks=[]):
+        ''' Remove one or more tracks from the current user's
+            "Your Music" library.
+
+            Parameters:
+                - tracks - a list of track URIs, URLs or IDs
+        '''
+        tlist = [self._get_id('track', t) for t in tracks]
+        return self._delete('me/tracks/?ids=' + ','.join(tlist))
+
+
+
+
+    def current_user_saved_albums(self, limit=20, offset=0):
+        ''' Gets a list of the albums saved in the current authorized user's
+            "Your Music" library
+
+            Parameters:
+                - limit - the number of albums to return
+                - offset - the index of the first album to return
+
+        '''
+        return self._get('me/albums', limit=limit, offset=offset)
+
+    def current_user_saved_tracks_contains(self, tracks=[]):
+        ''' Check if one or more tracks is already saved in
+            the current Spotify user’s “Your Music” library.
+
+            Parameters:
+                - tracks - a list of track URIs, URLs or IDs
+        '''
+        tlist = [self._get_id('track', t) for t in tracks]
+        return self._get('me/tracks/contains?ids=' + ','.join(tlist))
+
+    def search_album(self):
+        #TODO: https://developer.spotify.com/web-api/search-item/
+        raise NotImplementedError("Not implemented yet")
+
+    def search_artis(self):
+        #TODO https://developer.spotify.com/web-api/search-item/
+        raise NotImplementedError("Not implemented yet")
+
+    def search_playlist(self):
+        #TODO: https://developer.spotify.com/web-api/search-item/
+        raise NotImplementedError("Not implemented yet")
+
+    def search_track(self):
+        #TODO: https://developer.spotify.com/web-api/search-item/
+        raise NotImplementedError("Not implemented yet")
+
+    def search(self, q, limit=10, offset=0, type='track'):
+        ''' searches for an item
+
+            Parameters:
+                - q - the search query
+                - limit  - the number of items to return
+                - offset - the index of the first item to return
+                - type - the type of item to return. One of 'artist', 'album',
+                         'track' or 'playlist'
+        '''
+        return self._get('search', q=q, limit=limit, offset=offset, type=type)
+
+    def track(self, track_id):
+        ''' returns a single track given the track's ID, URI or URL
+
+            Parameters:
+                - track_id - a spotify URI, URL or ID
+        '''
+
+        trid = self._get_id('track', track_id)
+        return self._get('tracks/' + trid)
+
+    def tracks(self, tracks):
+        ''' returns a list of tracks given a list of track IDs, URIs, or URLs
+
+            Parameters:
+                - tracks - a list of spotify URIs, URLs or IDs
+        '''
+
+        tlist = [self._get_id('track', t) for t in tracks]
+        return self._get('tracks/?ids=' + ','.join(tlist))
+
+    def user(self, user):
+        ''' Gets basic profile information about a Spotify User
+
+            Parameters:
+                - user - the id of the usr
+        '''
+        return self._get('users/' + user)
+
+    def user_playlists(self, user, limit=50, offset=0):
+        ''' Gets playlists of a user
+
+            Parameters:
+                - user - the id of the usr
+                - limit  - the number of items to return
+                - offset - the index of the first item to return
+        '''
+        return self._get("users/%s/playlists" % user, limit=limit, offset=offset)
+
+    def user_playlist(self, user, playlist_id = None, fields=None):
+        ''' Gets playlist of a user
+            Parameters:
+                - user - the id of the user
+                - playlist_id - the id of the playlist
+                - fields - which fields to return
+        '''
+        if not playlist_id:
+            return self._get("users/%s/starred" % (user), fields=fields)
+        plid = self._get_id('playlist', playlist_id)
+        return self._get("users/%s/playlists/%s" % (user, plid), fields=fields)
+
+    def user_playlist_tracks(self, user, playlist_id = None, fields=None,
+        limit=100, offset=0):
+        ''' Get full details of the tracks of a playlist owned by a user.
+
+            Parameters:
+                - user - the id of the user
+                - playlist_id - the id of the playlist
+                - fields - which fields to return
+                - limit - the maximum number of tracks to return
+                - offset - the index of the first track to return
+        '''
+        plid = self._get_id('playlist', playlist_id)
+        return self._get("users/%s/playlists/%s/tracks" % (user, plid),
+                    limit=limit, offset=offset, fields=fields)
+
+    def user_playlist_create(self, user, name, public=True):
+        ''' Creates a playlist for a user
+
+            Parameters:
+                - user - the id of the user
+                - name - the name of the playlist
+                - public - is the created playlist public
+        '''
+        data = {'name':name, 'public':public }
+        return self._post("users/%s/playlists" % (user,), payload = data)
+
+    def user_playlist_add_tracks(self, user, playlist_id, tracks,
+                position=None):
+        ''' Adds tracks to a playlist
+
+            Parameters:
+                - user - the id of the user
+                - playlist_id - the id of the playlist
+                - tracks - a list of track URIs, URLs or IDs
+                - position - the position to add the tracks
+        '''
+        plid = self._get_id('playlist', playlist_id)
+        ftracks = [ self._get_uri('track', tid) for tid in tracks]
+        return self._post("users/%s/playlists/%s/tracks" % (user,plid),
+             payload = ftracks, position=position)
+
+    def user_playlist_remove_specific_occurrences_of_tracks(self, user,
+            playlist_id, tracks, snapshot_id=None):
+        ''' Removes all occurrences of the given tracks from the given playlist
+
+            Parameters:
+                - user - the id of the user
+                - playlist_id - the id of the playlist
+                - tracks - an array of objects containing Spotify URIs of the tracks to remove with their current positions in the playlist.  For example:
+                    [  { "uri":"4iV5W9uYEdYUVa79Axb7Rh", "positions":[2] },
+                       { "uri":"1301WleyT98MSxVHPZCA6M", "positions":[7] } ]
+                - snapshot_id - optional id of the playlist snapshot
+        '''
+
+        plid = self._get_id('playlist', playlist_id)
+        ftracks = []
+        for tr in tracks:
+            ftracks.append({
+                "uri": self._get_uri("track", tr["uri"]),
+                "positions": tr["positions"],
+            })
+        payload = { "tracks": ftracks }
+        if snapshot_id:
+            payload["snapshot_id"] = snapshot_id
+        return self._delete("users/%s/playlists/%s/tracks" % (user, plid),
+                payload = payload)
+
+    def user_playlist_remove_all_occurrences_of_tracks(self, user, playlist_id,
+                        tracks, snapshot_id=None):
+        ''' Removes all occurrences of the given tracks from the given playlist
+
+            Parameters:
+                - user - the id of the user
+                - playlist_id - the id of the playlist
+                - tracks - the list of track ids to add to the playlist
+                - snapshot_id - optional id of the playlist snapshot
+
+        '''
+
+        plid = self._get_id('playlist', playlist_id)
+        ftracks = [ self._get_uri('track', tid) for tid in tracks]
+        payload = { "tracks": [ {"uri": track} for track in ftracks] }
+        if snapshot_id:
+            payload["snapshot_id"] = snapshot_id
+        return self._delete("users/%s/playlists/%s/tracks" % (user, plid),
+                payload = payload)
+
+    def user_playlist_reorder_tracks(self, user, playlist_id, range_start, insert_before,
+                        range_length=1, snapshot_id=None):
+        ''' Reorder tracks in a playlist
+
+            Parameters:
+                - user - the id of the user
+                - playlist_id - the id of the playlist
+                - range_start - the position of the first track to be reordered
+                - range_length - optional the number of tracks to be reordered (default: 1)
+                - insert_before - the position where the tracks should be inserted
+                - snapshot_id - optional playlist's snapshot ID
+        '''
+        plid = self._get_id('playlist', playlist_id)
+        payload = { "range_start": range_start,
+                    "range_length": range_length,
+                    "insert_before": insert_before }
+        if snapshot_id:
+            payload["snapshot_id"] = snapshot_id
+        return self._put("users/%s/playlists/%s/tracks" % (user,plid),
+                payload = payload)
+
+    def user_playlist_replace_tracks(self, user, playlist_id, tracks):
+        ''' Replace all tracks in a playlist
+
+            Parameters:
+                - user - the id of the user
+                - playlist_id - the id of the playlist
+                - tracks - the list of track ids to add to the playlist
+        '''
+        plid = self._get_id('playlist', playlist_id)
+        ftracks = [ self._get_uri('track', tid) for tid in tracks]
+        payload = { "uris": ftracks }
+        return self._put("users/%s/playlists/%s/tracks" % (user,plid),
+                payload = payload)
+
+    def current_user(self):
+        ''' Get detailed profile information about the current user.
+            An alias for the 'me' method.
+        '''
+        return self.me()
 
     def _get_id(self, type, id):
         fields = id.split(':')
