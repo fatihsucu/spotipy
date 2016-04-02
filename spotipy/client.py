@@ -98,6 +98,7 @@ class Spotify(object):
 
         if self.trace:  # pragma: no cover
             print()
+            print ('headers', headers)
             print ('http status', r.status_code)
             print(method, r.url)
             if payload:
@@ -701,6 +702,66 @@ class Spotify(object):
             An alias for the 'me' method.
         '''
         return self.me()
+
+    def recommendations(self, seed_artists=[], seed_genres=[], seed_tracks=[],
+        limit = 20, country=None, **kwargs):
+        ''' Get a list of recommended tracks for one to five seeds.
+
+            Parameters:
+                - seed_artists - a list of artist IDs, URIs or URLs
+
+                - seed_tracks - a list of artist IDs, URIs or URLs
+
+                - seed_genres - a list of genre names. Available genres for 
+                  recommendations can be found by calling recommendation_genre_seeds
+
+                - country - An ISO 3166-1 alpha-2 country code. If provided, all 
+                  results will be playable in this country.
+
+                - limit - The maximum number of items to return. Default: 20.
+                  Minimum: 1. Maximum: 100
+
+                - min/max/target_<attribute> - For the tuneable track attributes listed 
+                  in the documentation, these values provide filters and targeting on
+                  results.
+        '''
+        params = dict(limit=limit)
+        if seed_artists:
+            params['seed_artists'] = [self._get_id('artist', a) for a in seed_artists]
+        if seed_genres:
+            params['seed_genres'] = seed_genres
+        if seed_tracks:
+            params['seed_tracks'] = [self._get_id('track', t) for t in seed_tracks]
+        if country:
+            params['market'] = country
+
+        for attribute in ["acousticness", "danceability", "duration_ms", "energy", 
+            "instrumentalness", "key", "liveness", "loudness", "mode", "popularity",
+            "speechiness", "tempo", "time_signature", "valence"]:
+            for prefix in ["min_", "max_", "target_"]:
+                param = prefix + attribute
+                if param in kwargs:
+                    params[param] = kwargs[param]
+        return self._get('recommendations', **params)   
+
+    def recommendation_genre_seeds(self):
+        ''' Get a list of genres available for the recommendations function. 
+        '''
+        return self._get('recommendations/available-genre-seeds')
+
+    def audio_features(self, tracks=[]):
+        ''' Get audio features for multiple tracks based upon their Spotify IDs
+            Parameters:
+                - tracks - a list of track URIs, URLs or IDs, maximum: 50 ids
+        '''
+        tlist = [self._get_id('track', t) for t in tracks]
+        results =  self._get('audio-features?ids=' + ','.join(tlist))
+        # the response has changed, look for the new style first, and if
+        # its not there, fallback on the old style
+        if 'audio_features' in results:
+            return results['audio_features']
+        else:
+            return results
 
     def _get_id(self, type, id):
         fields = id.split(':')
