@@ -1,4 +1,5 @@
 # coding: utf-8
+# coding: utf-8
 
 
 from __future__ import print_function
@@ -143,19 +144,10 @@ class Spotify(object):
                         delay += 1
                 else:
                     raise
-            except Exception as e: 
-                raise
-                print ('exception', str(e))
+            except Exception as e:
+                raise e
                 # some other exception. Requests have
                 # been know to throw a BadStatusLine exception
-                retries -= 1
-                if retries >= 0:
-                    print ('retrying ...' + str(delay) + 'secs')
-                    time.sleep(delay)
-                    delay += 1
-                else:
-                    raise
-
 
     def _post(self, url, args=None, payload=None, **kwargs):
         if args:
@@ -401,25 +393,60 @@ class Spotify(object):
         '''
         return self._get('me/following', type='artist', limit=limit, after=after)
 
-    def current_user_follow_artists(self):
-        #TODO:  https://developer.spotify.com/web-api/follow-artists-users/
-        raise NotImplementedError("Not implemented yet")
+    def current_user_follow_artists(self, artist_ids):
+        """
 
-    def current_user_unfollow_artisis(self):
-        #TODO: https://developer.spotify.com/web-api/unfollow-artists-users/
-        raise NotImplementedError("Not Implemented yet")
+        Args:
+            artist_ids:  Optional. A comma-separated list of the artist.
 
-    def current_user_followed_contains(self):
-        #TODO: https://developer.spotify.com/web-api/check-current-user-follows/
-        raise NotImplementedError("Not Implemented yet")
+        Returns: Response
 
-    def current_user_follow_playlist(self):
-        #TODO https://developer.spotify.com/web-api/follow-playlist/
-        raise NotImplementedError("Not Implemented yet")
+        """
+        alist = [self._get_id('artist', a) for a in artist_ids]
+        return self._put("me/following?type=artist?ids={}".format(alist))
 
-    def current_user_unfollow_playlist(self):
-        #TODO: https://developer.spotify.com/web-api/unfollow-playlist/
-        raise NotImplementedError("Not Implemented yet")
+    def current_user_unfollow_artists(self, artist_ids):
+        """
+
+        Args:
+            artist_ids:  Optional. A comma-separated list of the artist
+               For example: ids=74ASZWbe4lXaubB36ztrGX,08td7MxkoHQkXnWAYD8d6Q
+        Returns: Response
+
+        """
+        alist = [self._get_id('artist', a) for a in artist_ids]
+        return self._delete("me/following?type=artist?ids={}".format(alist))
+
+    def current_user_followed_artists_contains(self, artist_ids):
+        """
+
+        Args:
+            artist_ids: Optional. A comma-separated list of the artist
+
+        Returns:
+
+        """
+        alist = [self._get_id('artist', a) for a in artist_ids]
+        return self._get("me/following/contains?type=artist?ids={}".format(
+                alist))
+
+    def current_user_follow_playlist(self, owner_id, playlist_id):
+        """
+        Args :
+            owner_id: The Spotify user ID of the person who owns the playlist.
+            playlist_id: The Spotify ID of the playlist. Any playlist can be followed,
+            regardless of its public/private status, as long as you know its playlist ID.
+        """
+        return self._put("users/{}/playlists/{}/followers".format(owner_id, playlist_id))
+
+    def current_user_unfollow_playlist(self, owner_id, playlist_id):
+        """
+        Args :
+            owner_id: The Spotify user ID of the person who owns the playlist.
+            playlist_id: The Spotify ID of the playlist. Any playlist can be followed,
+            regardless of its public/private status, as long as you know its playlist ID.
+        """
+        return self._delete("users/{}/playlists/{}/followers".format(owner_id, playlist_id))
 
     def current_user_saved_tracks(self, limit=20, offset=0):
         ''' Gets a list of the tracks saved in the current authorized user's
@@ -452,9 +479,6 @@ class Spotify(object):
         tlist = [self._get_id('track', t) for t in tracks]
         return self._delete('me/tracks/?ids=' + ','.join(tlist))
 
-
-
-
     def current_user_saved_albums(self, limit=20, offset=0):
         ''' Gets a list of the albums saved in the current authorized user's
             "Your Music" library
@@ -476,23 +500,19 @@ class Spotify(object):
         tlist = [self._get_id('track', t) for t in tracks]
         return self._get('me/tracks/contains?ids=' + ','.join(tlist))
 
-    def search_album(self):
-        #TODO: https://developer.spotify.com/web-api/search-item/
-        raise NotImplementedError("Not implemented yet")
+    def search_album(self, album_name):
+        return self._get("search", q=album_name, type="album")
 
-    def search_artis(self):
-        #TODO https://developer.spotify.com/web-api/search-item/
-        raise NotImplementedError("Not implemented yet")
+    def search_artis(self, artist_name):
+        return self._get("search", q=artist_name, type="artist")
 
-    def search_playlist(self):
-        #TODO: https://developer.spotify.com/web-api/search-item/
-        raise NotImplementedError("Not implemented yet")
+    def search_playlist(self, playlist_name):
+        return self._get("search", q=playlist_name, type="playlist")
 
-    def search_track(self):
-        #TODO: https://developer.spotify.com/web-api/search-item/
-        raise NotImplementedError("Not implemented yet")
+    def search_track(self, track_name):
+        return self._get("search", q=track_name, type="track")
 
-    def search(self, q, limit=10, offset=0, type='track'):
+    def search(self, q, limit=10, offset=0, _type='track'):
         ''' searches for an item
 
             Parameters:
@@ -502,7 +522,7 @@ class Spotify(object):
                 - type - the type of item to return. One of 'artist', 'album',
                          'track' or 'playlist'
         '''
-        return self._get('search', q=q, limit=limit, offset=offset, type=type)
+        return self._get('search', q=q, limit=limit, offset=offset, _type=type)
 
     def track(self, track_id):
         ''' returns a single track given the track's ID, URI or URL
